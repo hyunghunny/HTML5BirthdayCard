@@ -1,0 +1,327 @@
+<p>안녕하세요, <i>생각의 웹</i>입니다.</p>
+<p><br/></p>
+<p>이번 포스팅은 요즘 잘 나가는 backbone.js를 이용해 객체 지향 Web App을 만든 사례를 
+    소개하려 합니다.</p>
+<p>backbone.js는 MVC (Model-View-Control) 모델을 기반으로 JavaScript 코드의 유지 보수성과 
+    재사용성을 향상시킨 오픈소스 라이브러리입니다.</p>
+<h2>1. Prerequisites</h2>
+<p>backbone.js를 사용하기 위해서는 해당 라이브러리 코드를 사이트에서 다운로드 받아야 합니다. 
+    또한, backbone.js은 underscore.js에 강한 종속성(dependency)가 있으니 함께 다운로드 받아야 합니다.</p>
+<p>저는 코드를 다운로드 받아 js/libs 폴더에 두고 다음과 같이 index.html에 삽입했습니다. 
+    (이후 사용을 위해 가장 보편적인 DOM 관련 라이브러러인 jQuery 또한 참조하는 점도 주의깊게 봐 주시기 바랍니다. )</p>
+<pre class="brush:html">
+    <script src="js/libs/underscore.js"></script>
+    <script src="js/libs/backbone.js"></script>
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+</pre>
+<p><br/></p>
+<h2>2. 모델 생성하기</h2>
+<p>모델을 생성하기 위해 Backbone.Model.extend() 함수를 사용합니다. </p>
+<p>이번 웹앱으로 HTML5 기능을 이용한 간단한 생일 카드를 만들기 위해 다음과 같은 코드를 작성했습니다.</p>
+<pre class="brush:javascript">
+    var Card = Backbone.Model.extend({
+    defaults: {
+        img: 'Happy-Birthday-Greetings.png',
+        title: 'Happy birthday to you!',
+        music: 'Kevin_Lax_-_Happy_Birthday.mp3'
+    },
+    initialize: function () {        
+        console.log("Card object initialized.");
+    },
+    getImageUrl: function () {
+        return 'img/' + this.get('img');
+    },
+    getMusicUrl: function () {
+        return 'res/' + this.get('music');
+    }
+});
+</pre>
+<p>카드에 포함될 기본 데이터로 이미지, 음악, 제목 속성을 지정하고 이미지는 img 폴더에 음악은 res 폴더에 두도록 설계했습니다.</p>
+<p>initialize 함수 (정확히는 함수형 속성)는 해당 모델이 생성되는 시점에 호출되며 여기에서 생성 시 필요한 초기화를 할 수 있습니다.</p>
+
+<p><br/></p>
+<p>이제 이 모델을 통해 인스턴스를 하나 생성해 보도록 합시다.</p>
+<pre class="brush:javascript">
+    var birthdayCard = new Card({    
+    to: 'My beloved Joyan',
+    from: 'Your father',    
+    message:'May happiness be with you all!'
+});
+</pre>
+<p>이 카드 모델에 추가로 필요한 속성들(수신인, 발신인, 내용)을 추가해서 인스턴스를 만들었습니다.</p>
+<p>이상 없이 코딩했다면 console 창에 "Card object initialized."가 찍히겠죠.</p>
+<h2>3. 뷰 생성하기</h2>
+<p>앞서 소개드린 바로는 아직 별다른 이득(benefits)이 하나 없습니다. 
+    이제 이걸로 뷰(view) 객체를 만들어 어떤 이득을 얻을 수 있는지 확인해 보겠습니다.</p>
+<pre class="brush:html">
+    <body>
+        <div id="myCard"></div> 
+     </body>
+</pre>
+<p><br/></p>
+<pre class="brush:javascript">
+    var CardView = Backbone.View.extend({
+    el: '#myCard',
+    audio: null,
+    canvas: null,
+
+    initialize: function () {
+
+        this.render();
+        /* 
+        * retrieving any HTML element by JQuery returns array object.
+        * Select first one of the retrieved array.  
+        */
+        this.canvas = $('#myCanvas')[0];
+        this.audio = $('#myAudio')[0];
+
+        console.log('Card view intialized.');
+    },
+    render: function () {
+        // append canvas, audio tag
+        this.$el.append('<canvas id="myCanvas" width="730" height="414"></canvas>');
+        this.$el.append('<audio id="myAudio"></audio>');
+        return this;
+    } 
+});
+</pre>
+<p>모델을 생성할때와 유사하게 Backbone.View.extend() 함수를 사용해서 뷰를 생성합니다.</p>
+<p>멤버 속성 중 하나인 el 에 index.html에 추가한 div 태그를 참조하기 위한 DOM selector를 저장합니다.
+    그리고, 앞서 설명드린 바와 같이 초기화 과정 중 호출되는 initialize() 함수를 살펴보면 index.html에 선언한 myCard라는 아이디의 div 태그를 참조하도록 되어 있으며 생성 시, 
+    HTML5 canvas, audio를 myCard div 내에 삽입하고 이를 멤버 속성인 audio와 canvas에 저장하도록 되어 있습니다.</p>
+<p>이제 이 뷰의 인스턴스를 생성해 봅시다.</p>
+<pre class="brush:javascript">
+    var birthdayCardView = new CardView({
+    model: birthdayCard
+ });
+</pre>
+<p>CardView의 생성자에 model이라는 속성으로 앞서 생성한 birthdayCard를 지정합니다.</p>
+<p>정상적으로 코드가 수행하면 console 창에 <i>'Card view intialized.'</i>가 출력됩니다.</p>
+<p><br /></p>
+<h2>3. 뷰에서 모델 정보 참조하기</h2>
+<p>이제 뷰와 모델이 연결되었습니다. 이제는 모델에 저장된 정보를 가지고 뷰를 꾸며보도록 하겠습니다.</p>
+<p><br/></p>
+<pre class="brush:javascript">
+    var CardView = Backbone.View.extend({
+    el: '#myCard',
+    canvas: null,
+    audio: null,
+
+    initialize: function () {
+        this.render();
+        /* 
+        * retrieving any HTML element by JQuery returns array object.
+        * Select first one of the retrieved array.  
+        */
+        this.canvas = $('#myCanvas')[0];
+        this.audio = $('#myAudio')[0];
+
+        this.showImage(); /* add image to canvas */
+
+        console.log('Card view intialized.');
+    },
+    render: function () {
+        /* omitted */
+    },
+ 
+    },
+    showImage: function () {
+        var view = this;
+        var context = view.canvas.getContext('2d');
+        var imageObj = new Image();
+        // clear canvas
+        context.clearRect(0, 0, view.canvas.width, view.canvas.height);
+        imageObj.onload = function () {
+            context.drawImage(imageObj, 5, 5, 730, 414);
+        };
+        imageObj.src = view.model.getImageUrl();
+        console.log('An image is shown.');
+        this.state = 'image';
+    }  
+});
+</pre>
+<p>이로써 초기화 과정 중 birthdayCard 인스턴스에 저장된 image 파일을 가져다 canvas에다 뿌렸습니다. </p>
+<p>showImage() 함수의 <i> imageObj.src = view.model.getImageUrl();</i> 코드와 같이
+    <b>view.model</b>로 모델의 객체에 접근할 수 있습니다.</p>
+<h2>4. 뷰에서 이벤트 처리하기</h2>
+<p>이번에는 마우스를 이미지에 올릴 경우, 모델 객체에 저장된 음악을 출력하고 이미지에서 마우스를 내릴 경우
+    멈추도록 이벤트 핸들링을 해 봅시다.</p>
+<pre class="brush:javascript">
+    var CardView = Backbone.View.extend({
+    el: '#myCard',
+    canvas: null,
+    audio: null,
+
+    events: {
+        'mouseover': 'playMusic',
+        'mouseout': 'pauseMusic'
+    },
+    initialize: function () {
+        this.render();
+        /* 
+        * retrieving any HTML element by JQuery returns array object.
+        * Select first one of the retrieved array.  
+        */
+        this.canvas = $('#myCanvas')[0];
+        this.audio = $('#myAudio')[0];
+        this.setMusic(); /* 음악 파일 경로를 설정 */
+        this.showImage();
+        console.log('Card view intialized.');
+    },
+    render: function () {
+        // append canvas, audio tag
+        this.$el.append('<canvas id="myCanvas" width="730" height="414"></canvas>');
+        this.$el.append('<audio id="myAudio"></audio>');
+        return this;
+    },
+    setMusic: function () {
+        // Set a birthday song from model
+        this.audio.src = this.model.getMusicUrl();
+    },
+
+    showImage: function () {
+       /* omitted */
+    },
+ 
+    playMusic: function () {
+        this.audio.play();
+        console.log('The birthday song is playing.');
+    },
+    pauseMusic: function () {
+        this.audio.pause();
+        console.log('The birthday song paused.');
+    }
+});
+</pre>
+<p>뷰 객체의 events 속성으로 'mouseover', 'mouseout' 이벤트에 대한 핸들러를 
+    playMusic, pauseMusic 과 같이 지정함으로써, 사진에 마우스를 올렸을때 음악이 흘러나오도록 하는 
+    이벤트를 처리할 수 있습니다.</p>
+<p>추가로 마우스 클릭 시, 이미지 대신 하트를 그리고 다시 클릭 시 메세지를 출력해 봅시다. </p>
+<pre class="brush:javascript">
+    var CardView = Backbone.View.extend({
+    el: '#myCard',
+    canvas: null,
+    audio: null,
+    state: null, /* 클릭 시 상태 변이를 저장하는 속성 */
+    events: {
+        'click': 'onClick',
+        'dblclick': 'showImage',
+        'mouseover': 'playMusic',
+        'mouseout': 'pauseMusic'
+    },
+    initialize: function () {
+        this.render();
+        /* 
+        * retrieving any HTML element by JQuery returns array object.
+        * Select first one of the retrieved array.  
+        */
+        this.canvas = $('#myCanvas')[0];
+        this.audio = $('#myAudio')[0];
+        this.setMusic();
+        this.showImage();
+        console.log('Card view intialized.');
+    },
+    render: function () {
+        // append canvas, audio tag
+        this.$el.append('<canvas id="myCanvas" width="730" height="414"></canvas>');
+        this.$el.append('<audio id="myAudio"></audio>');
+        return this;
+    },
+    setMusic: function () {
+        // Set a birthday song from model
+        this.audio.src = this.model.getMusicUrl();
+    },
+    onClick: function () {
+        switch (this.state) {
+            case 'image':
+                this.showHeart();
+                break;
+            case 'heart':
+                this.showMessage();
+                break;
+            case 'message':
+                // ignore state change
+                break;
+        }
+    },
+    showImage: function () {
+        var view = this;
+        var context = view.canvas.getContext('2d');
+        var imageObj = new Image();
+        // clear canvas
+        context.clearRect(0, 0, view.canvas.width, view.canvas.height);
+        imageObj.onload = function () {
+            context.drawImage(imageObj, 5, 5, 730, 414);
+        };
+        imageObj.src = view.model.getImageUrl();
+        console.log('An image is shown.');
+        this.state = 'image';
+    },
+    showHeart: function () {
+        var view = this;
+        var context = view.canvas.getContext('2d');
+        // clear canvas
+        context.clearRect(0, 0, view.canvas.width, view.canvas.height);
+        context.strokeStyle = "#000000";
+        context.strokeWeight = 3;
+        context.shadowOffsetX = 4.0;
+        context.shadowOffsetY = 4.0;
+        context.lineWidth = 10.0;
+        context.fillStyle = "#FF0000";
+        var d = 150;
+        var k = 100;
+        context.moveTo(k, k + d / 4);
+        context.quadraticCurveTo(k, k, k + d / 4, k);
+        context.quadraticCurveTo(k + d / 2, k, k + d / 2, k + d / 4);
+        context.quadraticCurveTo(k + d / 2, k, k + d * 3 / 4, k);
+        context.quadraticCurveTo(k + d, k, k + d, k + d / 4);
+        context.quadraticCurveTo(k + d, k + d / 2, k + d * 3 / 4, k + d * 3 / 4);
+        context.lineTo(k + d / 2, k + d);
+        context.lineTo(k + d / 4, k + d * 3 / 4);
+        context.quadraticCurveTo(k, k + d / 2, k, k + d / 4);
+        context.stroke();
+        context.fill();
+        console.log('A heart is shown.');
+        this.state = 'heart';
+    },
+    showMessage: function () {
+        var view = this;
+        var context = this.canvas.getContext('2d');
+        // Print 'To' message
+        context.font = 'bold 20pt Segoe UI';
+        context.fillText('To. ' + view.model.get('to'), 10, 50);
+        // Print 'title' message
+        context.font = 'italic 40pt Calibri';
+        context.fillStyle = 'gray';
+        context.fillText(view.model.get('title'), 10, 310);
+        // Print 'message' message
+        context.font = 'italic 20pt Calibri';
+        context.fillText(this.model.get('message'), 10, 350);
+        // Print 'from' message
+        context.font = '10pt Segoe UI';
+        context.fillStyle = 'black';
+        context.fillText('Sincerely, \n' + view.model.get('from'), 10, 400);
+        console.log('The birthday message is shown.');
+        this.state = 'message';
+    },
+    playMusic: function () {
+        this.audio.play();
+        console.log('The birthday song is playing.');
+    },
+    pauseMusic: function () {
+        this.audio.pause();
+        console.log('The birthday song paused.');
+    }
+});
+</pre>
+<p>이로써 이번 샘플 앱을 모두 완성했습니다.</p>
+<p>onClick 함수에서 click 이벤트가 발생할 때마다 state 속성을 image -> heart -> message로 변경시켜 이에 따라
+    알맞는 함수를 호출하고 있습니다. showHeart()의 경우, canvas에 벡터 방식으로 heart를 그리고 있고
+    showMessage() 함수에서는 모델에서 가져온 속성들 (to,  title, message, from)을 출력하고 있습니다. </p>
+<p><hr/></p>
+<p>이상으로 간략하게 나마 backbone.js를 이용해 코딩하는 법을 소개했습니다. </p>
+<p>서두에 말씀드린 것처럼 backbone.js를 사용하면 기존 코드보다 훨씬 가독성이 좋은 코드로 구현되고 
+    역할 별로 책임(responsibility)이 분리되어 유지 보수성이 향상됩니다.</p>
+<p>추가적으로 컬렉션, REST API 연동 등의 우수한 기능을 제공하기 때문에 이번 기회에 익혀 두시면 좋을 듯 합니다.</p>
+<p><hr /></p>
+<p>긴 글 끝까지 읽어 주셔서 감사합니다. 행복한 하루 되시길!</p>
